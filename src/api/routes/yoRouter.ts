@@ -1,16 +1,21 @@
 import express from "express";
-import {getConnection} from "typeorm";
-import {Yo} from "../../db/entities/Yo";
+import sqlite from "sqlite3";
 
 const yoRouter = express.Router();
 
 yoRouter.get("/get-all", async (req, res) => {
 	try {
-		const yoRepo = getConnection(process.env.NODE_ENV).getRepository(Yo);
+		const dbPath = process.env.DB_PATH || "";
 
-		const queryResult = await yoRepo.find();
+		const db = new sqlite.Database(dbPath, err =>
+			err ? console.error(err) : console.log("Connected to the SQLite database")
+		);
 
-		res.status(200).json(JSON.stringify(queryResult));
+		const sql = "SELECT * FROM yo";
+
+		db.all(sql, async (err: Error, row: any) => {
+			err ? console.log(err) : res.status(200).json(JSON.stringify(row));
+		});
 	} catch (e) {
 		console.log(e);
 	}
@@ -20,15 +25,22 @@ yoRouter.post("/post", async (req, res) => {
 	try {
 		const {exclamations} = req.body;
 
-		const yoRepo = getConnection(process.env.NODE_ENV).getRepository(Yo);
+		const dbPath = process.env.DB_PATH || "";
 
-		const yo = yoRepo.create();
+		const db = new sqlite.Database(dbPath, err =>
+			err ? console.error(err) : console.log("Connected to the SQLite database")
+		);
 
-		yo.exclamations = exclamations || 0;
+		const sql = `INSERT INTO Yo (exclamations) VALUES (?)`;
+		const values = [exclamations];
 
-		const insertresult = await yoRepo.save(yo);
-
-		res.status(201).send(insertresult);
+		db.run(sql, values, async (err: Error) => {
+			if (err) {
+				console.log(err);
+			} else {
+				res.status(201).send("Success!");
+			}
+		});
 	} catch (e) {
 		console.log(e);
 	}
