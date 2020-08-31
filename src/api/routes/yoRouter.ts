@@ -1,40 +1,28 @@
 import express from "express";
-import sqlite from "sqlite3";
+import db from "../../db/db";
 
 const yoRouter = express.Router();
 
-yoRouter.get("/get-all", async (req, res) => {
+yoRouter.get("/get-all", (req, res) => {
 	try {
-		const dbPath = process.env.DB_PATH || "";
+		const sql = "SELECT * FROM Yo";
 
-		const db = new sqlite.Database(dbPath, err =>
-			err ? console.error(err) : console.log("Connected to the SQLite database")
-		);
-
-		const sql = "SELECT * FROM yo";
-
-		db.all(sql, async (err: Error, row: any) => {
-			err ? console.log(err) : res.status(200).json(JSON.stringify(row));
+		db.query(sql, [], async (err, qRes) => {
+			err ? console.log(err) : res.status(200).json(JSON.stringify(qRes.rows));
 		});
 	} catch (e) {
 		console.log(e);
 	}
 });
 
-yoRouter.post("/post", async (req, res) => {
+yoRouter.post("/post", (req, res) => {
 	try {
 		const {exclamations} = req.body;
 
-		const dbPath = process.env.DB_PATH || "";
-
-		const db = new sqlite.Database(dbPath, err =>
-			err ? console.error(err) : console.log("Connected to the SQLite database")
-		);
-
-		const sql = `INSERT INTO Yo (exclamations) VALUES (?)`;
+		const sql = `INSERT INTO Yo (exclamations) VALUES ($1)`;
 		const values = [exclamations];
 
-		db.run(sql, values, async (err: Error) => {
+		db.query(sql, values, (err: Error) => {
 			if (err) {
 				console.log(err);
 			} else {
