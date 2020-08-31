@@ -1,26 +1,46 @@
-import sqlite from "sqlite3";
+import {Pool} from "pg";
 import {config} from "dotenv";
 
-config({
-	path: "../../../.env",
-});
+(async () => {
+	config({
+		path: "../../../.env",
+	});
 
-const dbPath = process.env.DB_PATH || "";
+	const pool = new Pool({
+		connectionString: process.env.DATABASE_URL,
+		ssl: {
+			rejectUnauthorized: false,
+		},
+	});
 
-const db = new sqlite.Database(dbPath, err =>
-	err ? console.error(err) : console.log("Connected to the SQLite database")
-);
+	const client = await pool.connect();
 
-db.serialize(() => {
-	db.run(`DROP TABLE IF EXISTS Yo`, err =>
-		err ? console.error(err) : console.log(`Table Yo dropped successfully`)
-	);
-	db.run(
-		`CREATE TABLE IF NOT EXISTS Yo (
+	try {
+		await client.query("BEGIN");
+
+		const sql = `CREATE TABLE IF NOT EXISTS Yo (
+            "id" SERIAL,
             "exclamations" INT NOT NULL
-        );`,
-		err => (err ? console.error(err) : console.log(`Table Yo added successfully`))
-	);
-});
+        );`;
 
-db.close(err => (err ? console.log(err) : console.log("Database closed.")));
+		await client.query(sql, []);
+
+		console.log("TABLE 1 CREATED!");
+
+		/* const sql2 = `CREATE TABLE IF NOT EXISTS Yo2 (
+            "id" SERIAL,
+            "exclamations" INT NOT NULL
+        );`;
+
+		await client.query(sql2, []);
+
+		console.log("TABLE 2 CREATED!"); */
+
+		await client.query("COMMIT");
+	} catch (e) {
+		await client.query("ROLLBACK");
+		throw e;
+	} finally {
+		client.release();
+	}
+})().catch(e => console.log(e));
