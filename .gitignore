@@ -1,0 +1,9 @@
+node_modules
+dist
+.cache
+.env
+cryptography/
+.idea/
+.vscode/
+tmp/
+temp/
